@@ -1,9 +1,11 @@
 const { program } = require("commander");
 const http = require("http");
-const fs = require("fs");
+const fs = require("fs/promises");
 const { mkdir, access } = require("fs/promises");
 const { constants } = require("fs");
 const { URL } = require("url");
+const path = require("path");
+
 
 program
   .option("-h, --host <host>", "Input the host")
@@ -41,6 +43,7 @@ const ensureCacheDir = async (path) => {
   }
 };
 
+
 (async () => {
   
   if (!options.host || !options.port || !options.cache){
@@ -56,9 +59,81 @@ const ensureCacheDir = async (path) => {
   // }
   await ensureCacheDir(options.cache);
   await checkPort(options.port);
-  const server = http.createServer((req, res) => {
-    
-  });
+
+
+  const server = http.createServer(async (req, res) => {
+
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const code = url.pathname.replace(/^\/+/, "");
+
+  if (!/^\d{3}$/.test(code)) {
+    res.statusCode = 404;
+    return res.end("Не знайдено");
+  }
+
+  const filePath = path.join(options.cache, `${code}.jpg`);
+
+  const readBody = () =>
+    new Promise((resolve, reject) => {
+      const chunks = [];
+      req.on("data", (c) => chunks.push(c));
+      req.on("end", () => resolve(Buffer.concat(chunks)));
+      req.on("error", reject);
+    });
+
+  try {
+    switch (req.method) {
+      case "GET": {
+        try {
+          const data = await fs.readFile(filePath);
+          res.writeHead(200, { "Content-Type": "image/jpeg" });
+          return res.end(data);
+        } catch (err) {
+          if (err.code === "ENOENT") {
+            res.statusCode = 404;
+            return res.end("Файл не знайдено в кеші");
+          }
+          res.statusCode = 500;
+          return res.end("Проблеми із сервером");
+        }
+      }
+
+      case "PUT": {
+        const body = await readBody();
+        if (!body || body.length === 0) {
+          res.statusCode = 400;
+          return res.end("Тіло пусте");
+        }
+        await fs.writeFile(filePath, body);
+        res.statusCode = 201;
+        return res.end("Створено");
+      }
+
+      case "DELETE": {
+        try {
+          await fs.unlink(filePath);
+          res.statusCode = 200;
+          return res.end(`Файл було успішно видалено: ${filePath}`);
+        } catch (err) {
+          if (err.code === "ENOENT") {
+            res.statusCode = 404;
+            return res.end("Файл не знайдено в кеші");
+          }
+          res.statusCode = 500;
+          return res.end("Проблеми із сервером");
+        }
+      }
+
+      default: {
+        res.writeHead(405, { Allow: "GET, PUT, DELETE" });
+        return res.end("Метод не дозволений");
+      }
+    }
+  } catch (err) {
+    res.statusCode = 500;
+    return res.end("Проблеми із сервером");
+  }
+});
 
   server.on("error", (err) => {
     console.log("Помилка при запуску сервера: ", err.message)
