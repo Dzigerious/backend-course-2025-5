@@ -5,6 +5,14 @@ const { mkdir, access } = require("fs/promises");
 const { constants } = require("fs");
 const { URL } = require("url");
 const path = require("path");
+const superagent = require("superagent");
+
+function binaryParser(res, callback) {
+  const data = [];
+  res.on("data", (chunk) => data.push(chunk));
+  res.on("end", () => callback(null, Buffer.concat(data))); // null means an absence of errors
+  res.on("error", (err) => callback(err));
+}
 
 
 program
@@ -86,12 +94,28 @@ const ensureCacheDir = async (path) => {
       case "GET": {
         try {
           const data = await fs.readFile(filePath);
+          res.setHeader("X-Cache", "HIT");
           res.writeHead(200, { "Content-Type": "image/jpeg" });
           return res.end(data);
         } catch (err) {
           if (err.code === "ENOENT") {
-            res.statusCode = 404;
-            return res.end("Файл не знайдено в кеші");
+            try {
+              const urlCat = `https://http.cat/${code}.jpg`;
+              const response = await superagent
+                .get(urlCat)
+                .buffer(true)
+                .parse(binaryParser)
+                .ok((res) => res.status === 200);
+
+              const img = response.body;
+              await fs.writeFile(filePath, img);
+              res.setHeader("X-Cache", "MISS");
+              res.writeHead(200, { "Content-Type": "image/jpeg" });
+              return res.end(img);
+            } catch (e) {
+              res.statusCode = 404;
+              return res.end("Not Found");
+            }
           }
           res.statusCode = 500;
           return res.end("Проблеми із сервером");
