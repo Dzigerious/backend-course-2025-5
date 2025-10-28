@@ -1,5 +1,0 @@
-curl -v http://localhost:3000/200 --output cache/200.jpg
-
-curl -X PUT -v http://localhost:3000/200 --data-binary @cache/200.jpg -H \"Content-Type: image/jpeg\
-
-curl -X DELETE -v http://localhost:3000/200
