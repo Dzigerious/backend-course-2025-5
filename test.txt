@@ -1,0 +1,14 @@
+curl -v http://localhost:3000/200 --output cache/200.jpg
+curl -v http://localhost:3000/404 --output cache/404.jpg
+curl -v http://localhost:3000/418 --output cache/418.jpg
+curl -v http://localhost:3000/500 --output cache/500.jpg
+
+curl -X PUT -v http://localhost:3000/200 --upload-file cache/200.jpg
+curl -X PUT -v http://localhost:3000/404 --upload-file cache/404.jpg
+curl -X PUT -v http://localhost:3000/418 --upload-file cache/418.jpg
+curl -X PUT -v http://localhost:3000/500 --upload-file cache/500.jpg
+
+curl -X DELETE -v http://localhost:3000/200
+curl -X DELETE -v http://localhost:3000/404
+curl -X DELETE -v http://localhost:3000/418
+curl -X DELETE -v http://localhost:3000/500

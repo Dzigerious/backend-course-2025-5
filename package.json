@@ -4,7 +4,25 @@
   "description": "Виконання 5 лабораторної роботи",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node main.js --host localhost --port 3000 --cache cache",
+    "dev": "nodemon main.js -- -h localhost -p 3000 -c cache",
+
+    "get:200": "curl -v http://localhost:3000/200 --output cache/200.jpg",
+    "get:404": "curl -v http://localhost:3000/404 --output cache/404.jpg",
+    "get:418": "curl -v http://localhost:3000/418 --output cache/418.jpg",
+    "get:500": "curl -v http://localhost:3000/500 --output cache/500.jpg",
+    
+    "put:200": "curl -X PUT -v http://localhost:3000/200 --data-binary @cache/200.jpg -H \"Content-Type: image/jpeg\"",
+    "put:404": "curl -X PUT -v http://localhost:3000/404 --data-binary @cache/404.jpg -H \"Content-Type: image/jpeg\"",
+    "put:418": "curl -X PUT -v http://localhost:3000/418 --data-binary @cache/418.jpg -H \"Content-Type: image/jpeg\"",
+    "put:500": "curl -X PUT -v http://localhost:3000/500 --data-binary @cache/500.jpg -H \"Content-Type: image/jpeg\"",
+
+
+    "delete:200": "curl -X DELETE -v http://localhost:3000/200",
+    "delete:404": "curl -X DELETE -v http://localhost:3000/404",
+    "delete:418": "curl -X DELETE -v http://localhost:3000/418",
+    "delete:500": "curl -X DELETE -v http://localhost:3000/500"
   },
   "repository": {
     "type": "git",
